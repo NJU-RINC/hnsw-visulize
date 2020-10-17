@@ -11,6 +11,7 @@
 #include <map>
 #include <random>
 #include <cmath>
+#include <fstream>
 
 namespace ann
 {
@@ -46,6 +47,8 @@ private:
     int max_level_;
 
     std::mt19937 gen_;
+
+    std::ofstream graph_ofs;
 
 public:
     hnsw(const one_data*);

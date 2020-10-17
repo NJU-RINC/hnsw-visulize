@@ -3,7 +3,7 @@ def parser(fname, actions, data, levels, nebs):
     with open(fname, 'r') as f:
         ls = f.readlines()
         for line in ls:
-            t = line.split(' ')
+            t = line.strip().split(' ')
             actions.append(t[0])
             idx = t[1]
             levels.append(int(t[2]))
@@ -14,6 +14,8 @@ def parser(fname, actions, data, levels, nebs):
             nebs[idx] = {}
             for i in range(len(nn)):
                 a = nn[i].split(',')
+                if a[-1] == '':
+                    a = a[:-1]
                 a = [int(b) for b in a]
                 nebs[idx][i] = a
 

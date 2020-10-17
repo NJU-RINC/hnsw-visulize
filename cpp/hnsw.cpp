@@ -25,7 +25,8 @@ hnsw::hnsw(const one_data* d) {
 }
 
 hnsw::hnsw(const one_data* d, idx_t max_sz, int m, int ef_con) :
-        one_data_(d), size_(max_sz), data_sz_(d->data_size()) {
+        one_data_(d), size_(max_sz), data_sz_(d->data_size()),
+        graph_ofs("graph.log") {
     used_sz_ = 0;
     data_ = new char[size_ * data_sz_];
 
@@ -80,12 +81,20 @@ hnsw::idx_t hnsw::insert(const char* data) {
     int level = new_level();
     debug_print("insert level ", level);
 
+    {
+        graph_ofs << "add " << data_pos << " " << level;
+        float* pf = (float*)(data);
+        graph_ofs << " " << *pf++;
+        graph_ofs << "," << *pf;
+    }
+
     assert(neibor_link_[data_pos] == 0);
     neibor_link_[data_pos] = new_linklist(level);
 
     if (max_level_ == -1) {
         max_level_ = level;
         entor_point_ = data_pos;
+        graph_ofs << std::endl;
         return data_pos;
     }
     
@@ -96,6 +105,7 @@ hnsw::idx_t hnsw::insert(const char* data) {
         ep = neb.begin()->second;
     }
     debug_print("search low level");
+    std::vector<std::string> line_logs;
     for (auto i = std::min(max_level_, level); i >= 0; --i) {
         auto m_max = i == 0 ? m_max0_ : m_max_;
         auto neb = search_layer(data_pos, ep, ef_construction_, i);
@@ -105,7 +115,9 @@ hnsw::idx_t hnsw::insert(const char* data) {
             ", neb choosen ", neb_choosen.size());
         *p2linklist_nebsz(data_pos, i) = neb_choosen.size();
         auto p_idx = p2linklist_neb(data_pos, i);
+        std::string one_log(" ");
         for (const auto& each : neb_choosen) {
+            one_log += std::to_string(each.second) + ",";
             *p_idx++ = each.second;
             auto p_neb = p2linklist_neb(each.second, i);
             neb_sz_t* p_nebsz = p2linklist_nebsz(each.second, i);
@@ -138,11 +150,19 @@ hnsw::idx_t hnsw::insert(const char* data) {
                 *p_nebsz = ct;
             }
         }
-    }
+        line_logs.emplace_back(std::move(one_log));
+    } // end for
 
     if (level > max_level_) {
         max_level_ = level;
         entor_point_ = data_pos;
+    }
+
+    {
+        for (auto p = line_logs.rbegin(); p != line_logs.rend(); ++p) {
+            graph_ofs << *p;
+        }
+        graph_ofs << std::endl;
     }
 
     return data_pos;
