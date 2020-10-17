@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -72,11 +73,25 @@ ax.grid(False)
 #ax.set_xlim3d(-1.1,1.1)
 #ax.set_ylim3d(-1.1,1.1)
 #ax.set_zlim3d(0,5)
-
 scope = Scope(ax)
 
+pause = False
+
+def onClick(event):
+    global pause
+    pause ^= True
+
+def Tick():
+    i = 0
+    while True:
+        if not pause:
+            i = i + 1
+        yield i
+
+fig.canvas.mpl_connect('button_press_event', onClick)
+
 # pass a generator in "emitter" to produce data for the update func
-ani = animation.FuncAnimation(fig,scope.update,interval=20,blit=True)
+anim = animation.FuncAnimation(fig,scope.update,Tick,interval=20,blit=True)
 
 plt.axis("off")
 plt.show()
