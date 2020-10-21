@@ -4,7 +4,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-from utils import parser
+from utils import parser, general_parser
 
 
 class Scope:
@@ -64,6 +64,55 @@ class Scope:
 
         return []
 
+class Apple:
+    def __init__(self, ax, fname='graph.log'):
+        self.ax = ax
+        
+        self.actions, self.data = general_parser(fname)
+
+        self.colors = ['tab:blue','tab:orange','tab:green','tab:red',
+            'tab:purple','tab:brown','tab:pink','tab:gray']
+
+        self.arts = []
+    def update(self, n):
+        if n >= len(self.actions):
+            return []
+        
+        action = self.actions[n]
+        n_lvl = action['level'] + 1
+        dat = np.random.rand(n_lvl,3)
+        dat[:,0] = self.data[n * 2]
+        dat[:,1] = self.data[n * 2 + 1]
+        dat[:,2] = np.arange(n_lvl)
+
+        x,y,z = dat[:,0],dat[:,1],dat[:,2]
+
+        self.ax.scatter(x,y,z,s=40,c=self.colors[:n_lvl],alpha=1)
+        self.ax.plot(x,y,z,'y--')
+
+        #self.arts.append(self.ax.plot(x,y,z,'g'))
+
+        nebs = action['nebs']
+        for lvl in range(n_lvl):
+            if not nebs:
+                continue
+
+            if not lvl in nebs:
+                continue
+
+            dat1 = np.random.rand(2,3)
+            dat1[0,:] = dat[lvl,:] 
+            dat1[1][2] = lvl
+            
+            for idx in nebs[lvl]:
+                dat1[1][0] = self.data[idx*2]
+                dat1[1][1] = self.data[idx*2+1]
+                dd = np.copy(dat1)
+                x,y,z = dd[:,0],dd[:,1],dd[:,2]
+                self.ax.plot(x,y,z,'silver')
+
+        return []
+
 # Fixing random state for reproducibility
 np.random.seed(19680801 // 10)
 
@@ -73,22 +122,25 @@ ax.grid(False)
 #ax.set_xlim3d(-1.1,1.1)
 #ax.set_ylim3d(-1.1,1.1)
 #ax.set_zlim3d(0,5)
-scope = Scope(ax)
+scope = Apple(ax)
 
-pause = False
+pause = True
 
 def onClick(event):
     global pause
     pause ^= True
 
 def Tick():
+    global pause
     i = 0
     while True:
         if not pause:
             i = i + 1
+            pause ^= True
         yield i
 
-fig.canvas.mpl_connect('button_press_event', onClick)
+#fig.canvas.mpl_connect('button_press_event', onClick)
+fig.canvas.mpl_connect('key_press_event', onClick)
 
 # pass a generator in "emitter" to produce data for the update func
 anim = animation.FuncAnimation(fig,scope.update,Tick,interval=20,blit=True)
