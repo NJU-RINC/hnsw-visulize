@@ -64,6 +64,8 @@ class Scope:
 
         return []
 
+pause = True
+
 class Apple:
     def __init__(self, ax, fname='graph.log'):
         self.ax = ax
@@ -74,8 +76,23 @@ class Apple:
             'tab:purple','tab:brown','tab:pink','tab:gray']
 
         self.arts = []
+
+        path = np.fromfile("path", dtype=np.float32)
+        self.path = path.reshape(-1, 3)
+        self.i = 0
+
     def update(self, n):
+        global pause
         if n >= len(self.actions):
+            n = n - len(self.actions)
+            m = list(self.path.shape)[0]
+            if n < m:
+                x = self.path[n,:1]
+                y = self.path[n,1:2]
+                z = self.path[n,2:]
+                self.ax.scatter(x,y,z,s=40,c='tab:brown',alpha=1)
+            else:
+                pause = True
             return []
         
         action = self.actions[n]
@@ -109,7 +126,7 @@ class Apple:
                 dat1[1][1] = self.data[idx*2+1]
                 dd = np.copy(dat1)
                 x,y,z = dd[:,0],dd[:,1],dd[:,2]
-                self.ax.plot(x,y,z,'silver')
+                self.ax.plot(x,y,z,'silver',alpha=0.2)
 
         return []
 
@@ -119,12 +136,17 @@ np.random.seed(19680801 // 10)
 fig = plt.figure()
 ax = fig.add_subplot(projection="3d")
 ax.grid(False)
-#ax.set_xlim3d(-1.1,1.1)
-#ax.set_ylim3d(-1.1,1.1)
-#ax.set_zlim3d(0,5)
+
+base = np.fromfile("data", dtype=np.float32)
+base = base.reshape(-1, 2)
+x = base[:,0]
+y = base[:,1]
+z = np.empty(x.shape)
+z[:] = 5
+#ax.scatter(x,y,z,s=40,c='tab:brown',alpha=1)
+
 scope = Apple(ax)
 
-pause = True
 
 def onClick(event):
     global pause
@@ -143,7 +165,14 @@ def Tick():
 fig.canvas.mpl_connect('key_press_event', onClick)
 
 # pass a generator in "emitter" to produce data for the update func
-anim = animation.FuncAnimation(fig,scope.update,Tick,interval=20,blit=True)
+anim = animation.FuncAnimation(fig,scope.update,Tick,interval=50,blit=True)
+
+#while not stop:
+
+#path = np.fromfile("path", dtype=np.float32)
+#path = path.reshape(-1, 3)
+#x,y,z = path[:,0], path[:,1], path[:,2]
+#ax.scatter(x,y,z,s=40,c='tab:brown',alpha=1)
 
 plt.axis("off")
 plt.show()

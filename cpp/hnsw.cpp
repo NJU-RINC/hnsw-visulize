@@ -7,13 +7,17 @@
 #include <map>
 #include <unordered_set>
 #include <vector>
+
 #include <fstream>
+#include <sstream>
 
 #include "data_interface.h"
 #include "utils.h"
 
 namespace ann
 {
+
+std::ostringstream oss;
 
 hnsw::hnsw(const one_data* d) {
     one_data_ = d;
@@ -169,6 +173,13 @@ hnsw::idx_t hnsw::insert(const char* data) {
 }
 
 std::map<double, size_t> hnsw::search(const char* query_data, int k) const {
+    oss.str(std::string());
+    {
+        auto p = query_data;
+        oss.write(p, 8);
+        float l = 0.0;
+        oss.write((const char*)(&l), 4);
+    }
     std::map<double, size_t> result;
     if (used_sz_ == 0) return result;
     int ef = std::max(k, ef_search_);
@@ -177,7 +188,12 @@ std::map<double, size_t> hnsw::search(const char* query_data, int k) const {
         auto neb = search_layer(query_data, entor_point, 1, i);
         entor_point = neb.begin()->second;
     }
-    return search_layer(query_data, entor_point, ef, 0);
+    auto res = search_layer(query_data, entor_point, ef, 0);
+    {
+        std::ofstream ofs("path");
+        ofs << oss.str();  
+    }
+    return res;
 }
 
 void hnsw::set_ef_search(int val) const {
@@ -262,6 +278,14 @@ std::map<double, hnsw::idx_t> hnsw::search_layer(
         debug_print("candidate size, first element, ", candidates.size(), ", ", p->second);
         debug_print("candi dist min, result dist max, ", p->first, ", ", result.rbegin()->first);
         if (p->first > result.rbegin()->first) break;
+
+        {
+            auto pd = data_ + p->second * data_sz_;
+            oss.write(pd, 8);
+            float l = level;
+            oss.write((const char*)(&l), 4);
+        }
+
         int neb_count = *p2linklist_nebsz(p->second, level);
         debug_print("number of neighbor ", neb_count);
         auto p_neb = p2linklist_neb(p->second, level);
