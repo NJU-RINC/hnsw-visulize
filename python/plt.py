@@ -79,20 +79,32 @@ class Apple:
 
         path = np.fromfile("path", dtype=np.float32)
         self.path = path.reshape(-1, 3)
-        self.i = 0
+        self.i = 1
+        self.lines = []
 
     def update(self, n):
         global pause
         if n >= len(self.actions):
-            n = n - len(self.actions)
-            m = list(self.path.shape)[0]
-            if n < m:
-                x = self.path[n,:1]
-                y = self.path[n,1:2]
-                z = self.path[n,2:]
-                self.ax.scatter(x,y,z,s=40,c='tab:brown',alpha=1)
+            if len(self.lines) == 0:
+                dx,dy = 0.1,0.1
+                self.ax.scatter([dx],[dy],[0],s=50,c='r',alpha=1)
+                self.ax.plot([dx,dy],[dx,dy],[-0.5,4.5],'--',c='cyan',linewidth=2)
+
+                path = np.fromfile("path", dtype=np.float32)
+                path = path.reshape(-1, 3)[1:,::]
+                x,y,z = path[:,0], path[:,1], path[:,2]
+                l = x.shape[0]
+                l = min((self.i % l) + 1, l)
+                self.i = self.i + 1
+                for i in range(l-1):
+                    a=self.ax.plot(x[i:i+2],y[i:i+2],z[i:i+2],'r--',linewidth=3)
+                    self.lines.append(a)
+            
             else:
-                pause = True
+                for i in range(len(self.lines)):
+                    self.lines[i].pop(0).remove()
+                self.lines = []
+                
             return []
         
         action = self.actions[n]
@@ -126,7 +138,7 @@ class Apple:
                 dat1[1][1] = self.data[idx*2+1]
                 dd = np.copy(dat1)
                 x,y,z = dd[:,0],dd[:,1],dd[:,2]
-                self.ax.plot(x,y,z,'silver',alpha=0.2)
+                self.ax.plot(x,y,z,'k',alpha=0.5)
 
         return []
 
@@ -165,14 +177,9 @@ def Tick():
 fig.canvas.mpl_connect('key_press_event', onClick)
 
 # pass a generator in "emitter" to produce data for the update func
-anim = animation.FuncAnimation(fig,scope.update,Tick,interval=50,blit=True)
+#anim = animation.FuncAnimation(fig,scope.update,Tick,interval=50,blit=True)
+anim = animation.FuncAnimation(fig,scope.update,interval=200)
 
-#while not stop:
-
-#path = np.fromfile("path", dtype=np.float32)
-#path = path.reshape(-1, 3)
-#x,y,z = path[:,0], path[:,1], path[:,2]
-#ax.scatter(x,y,z,s=40,c='tab:brown',alpha=1)
-
+ax.text(0,0.5,-2,"HNSW search process",size=14)
 plt.axis("off")
 plt.show()

@@ -44,7 +44,7 @@ hnsw::hnsw(const one_data* d, idx_t max_sz, int m, int ef_con) :
     std::memset(neibor_link_, 0, sizeof(void*) * size_);
 
     ef_construction_ = ef_con;
-    ef_search_ = 10;
+    ef_search_ = 1;
 
     entor_point_ = 0;
     max_level_ = -1;
